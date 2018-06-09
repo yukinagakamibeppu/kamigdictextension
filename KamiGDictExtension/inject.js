@@ -4,83 +4,85 @@
 (function() {
   console.log("main.js func start");
 
-  // Adjust position
-  document.getElementById("center_col").setAttribute("style", "margin-left: 0; width:500px");
+  var IMG_SEARCH_QUERY_URL = "https://www.google.com/search?tbm=isch&q=";
+
+  // Adjust layout
+  document.getElementById("center_col").setAttribute("style", "margin-left: 0; width:400px");
   document.getElementById("searchform").setAttribute("style", "display: none");
   document.getElementById("sfcnt").setAttribute("style", "display: none");
   document.getElementById("top_nav").setAttribute("style", "display: none");
   document.getElementById("appbar").setAttribute("style", "display: none");
-  document.getElementById("foot").setAttribute("style", "display: none");
-  document.getElementById("extrares").setAttribute("style", "display: none");
+  //document.getElementById("foot").setAttribute("style", "display: none");
+  //document.getElementById("extrares").setAttribute("style", "display: none");
 
   // Prepare iframe for image preview
   var iframe = document.createElement("iframe");
-  iframe.setAttribute("style", "position:absolute; top:0px; left:502px; width: 400px; height:800px;");
+  var iframeStyle = "position:absolute; top:0px; left:402px; width: 800px; height:1600px;";
+  iframeStyle += "border: 0; transform: scale(0.5, 0.5); transform-origin: top left";
+  iframe.setAttribute("style", iframeStyle);
   document.body.appendChild(iframe);
-  //iframe.addEventListener("load", function() {
-  //  // hide tag filter buttons
-  //  document.getElementById("taw").setAttribute("style", "display: none");
-  //});
+  iframe.src = IMG_SEARCH_QUERY_URL + "dictionary";
 
+  // Execute setup repeatedly because the page reloads elements after event...
+  var dictInput = null; // Dictionary search input element
+  var INTERVAL_MILLISEC = 500;
+  setInterval(function() {
+    console.log("interval func called");
 
-  var input = null;
-  function setInputChangeEvent() {
-    console.log("setInputChangeEvent called");
-
-    var inputList = document.getElementsByClassName("dw-sbi");
-    if (inputList.length <= 0) {
+    // Find dictionary input tag
+    var input = document.querySelector("input.dw-sbi");
+    if (!input) {
       console.error("Target input element not found");
       return;
     }
-    if (input != inputList[0]) {
-      console.log("input tag recreated...?");
+    if (dictInput != input) {
+      console.log("input tag recreated");
+      dictInput = input;
+
+      // Adjust input tag layout
+      document.querySelector("div.dw-sb-cont").setAttribute("style", "width: 170px;");
     }
-    input = inputList[0];
 
+    // It seems page removes event listeners from input automatically even if the element stays the same
+    dictInput.addEventListener("change", handleDictInputChange);
 
-    input.addEventListener("change", function(event) {
-      console.log("handle input event");
+  }, INTERVAL_MILLISEC);
 
-      var text = event.target.value;
-      if (text != null && text.length > 1) {
-        iframe.src = "https://www.google.com/search?tbm=isch&q=" + text;
+  // Handle dictionary search input change event
+  function handleDictInputChange(event) {
+    console.log("handle input event");
+
+    var text = event.target.value;
+    if (text != null && text.length > 1) {
+      iframe.src = "https://www.google.com/search?tbm=isch&q=" + text;
+    }
+
+    // Delay execution because google reload element...
+    setTimeout(function() {
+      // Play pronounce audio
+      var pronunciationAudio = document.querySelector("audio");
+      if (pronunciationAudio) {
+        pronunciationAudio.play();
       }
 
-      setTimeout(function() {
-        // Play pronounce
-        var audioTags = document.getElementsByTagName("audio");
-        if (audioTags.length > 0) {
-          audioTags[0].play();
-        }
+      // "Translate" area
+      var translateEl = document.querySelector("div.lr_dct_trns");
+      if (translateEl) {
+        var style = "position:absolute; top:-60px; left:188px;";
+        style += "background-color: rgba(0,0,0,0.1);";
+        style += "max-height: 255px; overflow:auto;";
+        //style += "transform: scale(0.7); transform-origin: left top;"
+        translateEl.setAttribute("style", style);
+      }
 
-        // Delay execution because google reload element...
-        var els = document.getElementsByClassName("lr_dct_trns");
-        if (els.length <= 0) {
-          console.log("element lr_dct_trns not found");
-          return;
-        }
-        var attr = "position:absolute; top:-60px; left:300px; background-color: rgba(0,0,0,0.1);";
-        attr += "max-height: 255px; overflow:auto";
-        els[0].setAttribute("style", attr);
+      // Word use image
+      var wordUseImg = document.querySelector("#lr_dct_img_use");
+      if (wordUseImg) {
+        wordUseImg.setAttribute("style", "transform: scale(0.5); transform-origin: left top;");
+      }
 
-      }, 500);
-
-    });
-
+    }, 500);
   }
 
-  // Reset event by timer because handlers are removed automatically
-  var startTime = new Date().getTime();
-  var timer = setInterval(function() {
-    setInputChangeEvent();
-
-    // If too long, kill timer
-    var now = new Date().getTime();
-    var diffMilliSec = now - startTime;
-    var diffMin = Math.floor(diffMilliSec / (1000 * 60));
-    if (diffMin > 180) {
-      clearInterval(timer);
-    }
-  }, 500);
 
 })();
